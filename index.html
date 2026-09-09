@@ -141,6 +141,10 @@
   tr:hover td{background:var(--surface-2);}
   tr.total-row td{font-weight:700;border-top:1.5px solid var(--ink);border-bottom:none;}
   tr.total-row td:hover{background:transparent;}
+  tr.group-header td{background:var(--surface-2);font-weight:700;font-size:12.5px;color:var(--ink-soft);padding-top:12px;padding-bottom:6px;}
+  tr.group-header td:hover{background:var(--surface-2);}
+  tr.subtotal-row td{font-weight:600;color:var(--ink-soft);border-bottom:1px solid var(--line);font-size:12.5px;}
+  tr.subtotal-row td:hover{background:transparent;}
   table input[type=number]{min-width:62px;width:72px;padding:6px 6px;text-align:center;border-radius:7px;background:var(--surface);}
   table input.paid{background:var(--good-soft);border-color:var(--good);color:var(--good);font-weight:600;}
   table input.unpaid{background:var(--bad-soft);border-color:#F0C7C1;color:var(--ink-soft);}
@@ -510,13 +514,41 @@ function paymentsView(){
 /* ---------- EXPENSES ---------- */
 function expensesView(){
   const year = state.year;
-  const list = state.expenses.filter(e=> new Date(e.date).getFullYear()===year)
-                             .sort((a,b)=> new Date(b.date)-new Date(a.date));
+  const list = state.expenses.filter(e=> new Date(e.date).getFullYear()===year);
   const total = list.reduce((s,e)=> s+Number(e.amount||0), 0);
+
+  // group by category, keep EXPENSE_CATEGORIES order, then any leftover categories alphabetically
+  const byCat = {};
+  list.forEach(e=>{
+    const cat = e.category || 'אחר';
+    if(!byCat[cat]) byCat[cat] = [];
+    byCat[cat].push(e);
+  });
+  const orderedCats = [
+    ...EXPENSE_CATEGORIES.filter(c=> byCat[c]),
+    ...Object.keys(byCat).filter(c=> !EXPENSE_CATEGORIES.includes(c)).sort()
+  ];
+
+  const groupsHtml = orderedCats.map(cat=>{
+    const rows = byCat[cat].slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+    const catTotal = rows.reduce((s,e)=> s+Number(e.amount||0), 0);
+    const rowsHtml = rows.map(e=>`
+      <tr>
+        <td>${new Date(e.date).toLocaleDateString('he-IL')}</td>
+        <td>${escapeHtml(e.desc||'—')}</td>
+        <td>${fmt(e.amount)}</td>
+        <td>${editUnlocked ? `<button class="icon-btn" data-action="deleteExpense" data-id="${e.id}" title="מחיקה">✕</button>` : ''}</td>
+      </tr>`).join('');
+    return `
+      <tr class="group-header"><td colspan="4">${escapeHtml(cat)} <span style="font-weight:400;color:var(--ink-soft)">(${rows.length})</span></td></tr>
+      ${rowsHtml}
+      <tr class="subtotal-row"><td colspan="2">סה"כ ${escapeHtml(cat)}</td><td>${fmt(catTotal)}</td><td></td></tr>
+    `;
+  }).join('');
 
   return `
     <h1>הוצאות — ${year}</h1>
-    <p class="subtitle">תיעוד הוצאות הבניין: תחזוקה, ניקיון, חשמל ועוד.</p>
+    <p class="subtitle">תיעוד הוצאות הבניין, מקובצות לפי קטגוריה.</p>
     ${editUnlocked ? `
     <div class="card">
       <div class="row">
@@ -530,17 +562,10 @@ function expensesView(){
     <div class="card">
       ${list.length===0 ? `<div class="empty-note">אין עדיין הוצאות רשומות לשנת ${year}.</div>` : `
       <table>
-        <thead><tr><th>תאריך</th><th>קטגוריה</th><th>תיאור</th><th>סכום</th><th></th></tr></thead>
+        <thead><tr><th>תאריך</th><th>תיאור</th><th>סכום</th><th></th></tr></thead>
         <tbody>
-          ${list.map(e=>`
-            <tr>
-              <td>${new Date(e.date).toLocaleDateString('he-IL')}</td>
-              <td>${escapeHtml(e.category)}</td>
-              <td>${escapeHtml(e.desc||'—')}</td>
-              <td>${fmt(e.amount)}</td>
-              <td>${editUnlocked ? `<button class="icon-btn" data-action="deleteExpense" data-id="${e.id}" title="מחיקה">✕</button>` : ''}</td>
-            </tr>`).join('')}
-          <tr class="total-row"><td colspan="3">סה"כ הוצאות</td><td>${fmt(total)}</td><td></td></tr>
+          ${groupsHtml}
+          <tr class="total-row"><td colspan="2">סה"כ הוצאות</td><td>${fmt(total)}</td><td></td></tr>
         </tbody>
       </table>`}
     </div>
