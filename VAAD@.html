@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ספר הבית — ניהול ועד בית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --bg:#F4F5F7;
+    --surface:#FFFFFF;
+    --surface-2:#EEF0F3;
+    --ink:#14181F;
+    --ink-soft:#6B7280;
+    --line:#E4E7EC;
+    --sidebar-bg:#FDFBF6;
+    --sidebar-ink:#14181F;
+    --sidebar-ink-soft:#6B7280;
+    --sidebar-line:#E9E3D3;
+    --accent:#E5A83B;
+    --accent-dark:#B9821F;
+    --accent-soft:#FBEED0;
+    --accent-ink:#3A2A05;
+    --good:#279A63;
+    --good-soft:#E2F4EB;
+    --bad:#DE4B3D;
+    --bad-soft:#FBE7E4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-variant-numeric:tabular-nums;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{display:flex;min-height:100vh;}
+  /* SIDEBAR */
+  #sidebar{
+    width:256px;
+    flex-shrink:0;
+    background:var(--sidebar-bg);
+    border-inline-end:1px solid var(--sidebar-line);
+    padding:30px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:28px;
+  }
+  .brand{
+    font-family:'Manrope',sans-serif;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--accent-dark);
+    letter-spacing:.06em;
+  }
+  #buildingNameInput{
+    font-family:'Manrope',sans-serif;
+    font-size:21px;
+    font-weight:700;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid transparent;
+    color:var(--sidebar-ink);
+    padding:4px 0 8px;
+    width:100%;
+  }
+  #buildingNameInput::placeholder{color:var(--sidebar-ink-soft);}
+  #buildingNameInput:hover,#buildingNameInput:focus{
+    border-bottom:1px solid var(--sidebar-line);
+    outline:none;
+  }
+  .year-row{display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border:1px solid var(--sidebar-line);border-radius:10px;padding:7px 10px;}
+  .year-row button{
+    background:none;border:none;color:var(--sidebar-ink-soft);font-size:18px;cursor:pointer;
+    width:28px;height:28px;line-height:1;border-radius:7px;
+  }
+  .year-row button:hover{background:var(--accent-soft);color:var(--accent-dark);}
+  .year-row .yr{font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:var(--sidebar-ink);}
+  nav{display:flex;flex-direction:column;gap:4px;margin-top:2px;}
+  nav button{
+    text-align:right;
+    background:none;border:none;
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    font-weight:500;
+    color:var(--sidebar-ink-soft);
+    padding:11px 14px;
+    cursor:pointer;
+    border-radius:9px;
+    transition:background .15s, color .15s;
+  }
+  nav button.active{color:var(--accent-ink);font-weight:700;background:var(--accent);}
+  nav button:not(.active):hover{color:var(--sidebar-ink);background:var(--surface-2);}
+  .save-indicator{margin-top:auto;font-size:12px;color:var(--sidebar-ink-soft);}
+
+  /* MAIN */
+  main{flex:1;padding:40px 48px;max-width:1100px;}
+  h1{font-family:'Manrope',sans-serif;font-size:25px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em;}
+  .subtitle{color:var(--ink-soft);font-size:14px;margin:0 0 28px;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px;}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
+  label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-soft);font-weight:500;}
+  input[type=text],input[type=tel],input[type=number],input[type=date],select{
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    padding:9px 12px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:var(--surface-2);
+    color:var(--ink);
+    min-width:150px;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft);}
+  .btn{
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;
+    background:var(--ink);color:#fff;border:none;border-radius:9px;
+    padding:10px 18px;cursor:pointer;white-space:nowrap;
+    transition:transform .1s, background .15s;
+  }
+  .btn:hover{background:var(--accent-dark);}
+  .btn:active{transform:scale(.98);}
+  .btn.secondary{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  .btn.secondary:hover{background:var(--surface-2);border-color:var(--ink-soft);}
+  .btn.small{padding:6px 10px;font-size:12.5px;}
+  .btn.danger{background:transparent;color:var(--bad);}
+  .btn.danger:hover{background:var(--bad-soft);}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{
+    text-align:right;color:var(--ink-soft);font-weight:600;font-size:12px;
+    padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  td{padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--surface-2);}
+  tr.total-row td{font-weight:700;border-top:1.5px solid var(--ink);border-bottom:none;}
+  tr.total-row td:hover{background:transparent;}
+  table input[type=number]{min-width:62px;width:72px;padding:6px 6px;text-align:center;border-radius:7px;background:var(--surface);}
+  table input.paid{background:var(--good-soft);border-color:var(--good);color:var(--good);font-weight:600;}
+  table input.unpaid{background:var(--bad-soft);border-color:#F0C7C1;color:var(--ink-soft);}
+  .cell-owe{color:var(--bad);font-weight:700;}
+  .cell-ok{color:var(--good);font-weight:700;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:7px;font-size:12.5px;font-weight:600;}
+  .badge.paid{background:var(--good-soft);color:var(--good);}
+  .badge.unpaid{background:var(--bad-soft);color:var(--ink-soft);}
+  .name-cell{font-weight:700;position:sticky;right:0;background:var(--surface);}
+  tr:hover .name-cell{background:var(--surface-2);}
+  .empty-note{color:var(--ink-soft);font-size:13.5px;padding:14px 0;}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:15px;padding:4px 8px;border-radius:7px;}
+  .icon-btn:hover{color:var(--bad);background:var(--bad-soft);}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px;border-top:3px solid var(--line);}
+  .stat .label{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;font-weight:500;}
+  .stat .value{font-family:'Manrope',sans-serif;font-size:27px;font-weight:800;letter-spacing:-.01em;}
+  .stat.good{border-top-color:var(--good);}
+  .stat.bad{border-top-color:var(--bad);}
+  .stat.good .value{color:var(--good);}
+  .stat.bad .value{color:var(--bad);}
+
+  .chart{display:flex;align-items:flex-end;gap:10px;height:160px;padding:10px 4px 0;}
+  .bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;}
+  .bars{display:flex;gap:3px;align-items:flex-end;height:120px;width:100%;justify-content:center;}
+  .bar{width:11px;border-radius:4px 4px 0 0;}
+  .bar.income{background:var(--good);}
+  .bar.expense{background:var(--bad);}
+  .bar-group .m-label{font-size:11px;color:var(--ink-soft);}
+  .legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-soft);margin-top:10px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:9px;height:9px;border-radius:3px;display:inline-block;}
+
+  .diff-note{font-size:13px;margin-top:10px;color:var(--ink-soft);padding:10px 12px;border-radius:9px;background:var(--surface-2);}
+  .diff-note.bad{color:var(--bad);background:var(--bad-soft);}
+  .diff-note.good{color:var(--good);background:var(--good-soft);}
+  ::placeholder{color:#A7AEBB;}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div>
+      <div class="brand">ספר הבית</div>
+      <input id="buildingNameInput" type="text" placeholder="שם הבניין" />
+    </div>
+    <div class="year-row">
+      <button data-action="prevYear">‹</button>
+      <span class="yr" id="yearLabel"></span>
+      <button data-action="nextYear">›</button>
+    </div>
+    <nav id="nav"></nav>
+    <div id="adminControls" style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn secondary small" id="reloadImportBtn" style="width:100%">טעינה מחדש של נתוני היבוא</button>
+      <button class="btn small" id="exportReportBtn" style="width:100%">ייצוא דוח צפייה לדיירים</button>
+      <button class="btn secondary small" id="changePinBtn" style="width:100%">איך משנים סיסמה</button>
+      <button class="btn secondary small" id="lockBtn" style="width:100%">התנתקות / מצב צפייה</button>
+    </div>
+    <button class="btn secondary small" id="unlockBtn" style="width:100%;display:none">כניסת ועד בית</button>
+    <div class="save-indicator" id="saveIndicator">נטען…</div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<script>
+const MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+const MONTHS_SHORT = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
+const EXPENSE_CATEGORIES = ["תחזוקה","ניקיון","חשמל","מים","גינון","ביטוח","שיפוצים","אחר"];
+/* ====== SUPABASE SETUP — paste your own values here ====== */
+const SUPABASE_URL = "https://krxbguabhdutkndfspdt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_IkCWXGCyLGJO_RrJaglqZw_n5LSzIX6";
+const SUPABASE_READY = SUPABASE_URL.startsWith('https://') && !SUPABASE_ANON_KEY.startsWith('PASTE');
+const sb = SUPABASE_READY ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+/* =========================================================== */
+
+let state = {
+  buildingName: "",
+  year: new Date().getFullYear(),
+  tab: "tenants",
+  tenants: [],
+  payments: {},
+  expenses: [],
+  settings: { monthlyFee: 0, openingBalance: 0, actualBalance: null, actualBalanceDate: "" }
+};
+let saveTimer = null;
+let loaded = false;
+let editUnlocked = false;
+let currentUserEmail = null;
+
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+function fmt(n){
+  n = Number(n)||0;
+  return n.toLocaleString('he-IL',{style:'currency',currency:'ILS',maximumFractionDigits:0});
+}
+function paymentKey(tenantId, year, month){ return tenantId+":"+year+":"+month; }
+
+function seedDefaultData(){
+  const tenants = [
+    {id:'t1', name:'גלית שופן', apt:'1', phone:'052-9214101'},
+    {id:'t2', name:'סמדר ושי בר נס', apt:'2', phone:'050-7293733'},
+    {id:'t3', name:'אופרה אליוף', apt:'3', phone:'053-7345827'},
+    {id:'t4', name:'יחיאל', apt:'4', phone:'050-5729140'},
+    {id:'t5', name:'ברק ענבר', apt:'5', phone:''},
+    {id:'t6', name:'דליה', apt:'6', phone:'052-3688994'},
+    {id:'t7', name:'לבנה וחיים הופמן', apt:'7', phone:'050-5675666'},
+    {id:'t8', name:'אביבית ויוני מרום', apt:'8', phone:'054-2853321'},
+    {id:'t9', name:'שרית ודקל כהן', apt:'9', phone:'052-6600958'}
+  ];
+
+  const payments = {};
+  // 2024 — flat 250/month for everyone, except Ofra (t3) who missed July
+  tenants.forEach(t=>{
+    for(let m=0;m<12;m++){
+      if(t.id==='t3' && m===6) continue; // missed payment
+      payments[paymentKey(t.id, 2024, m)] = 250;
+    }
+  });
+  // 2025 — 300/month, actual amounts per tenant
+  const p2025 = {
+    t1: [300,300,300,300,300,300,300,300,300,300,300,300],
+    t2: [300,300,300,300,300,300,300,300,300,300,300,300],
+    t3: [300,300,300,300,300,300,300,300,300,300,300,300],
+    t4: [null,500,700,null,600,300,300,null,250,250,300,300],
+    t5: [null,null,null,null,1250,null,null,null,null,null,null,null],
+    t6: [300,300,600,null,600,null,600,null,600,null,600,null],
+    t7: [300,300,300,300,300,300,300,300,300,300,300,300],
+    t8: [300,300,600,null,250,250,250,250,null,null,null,null],
+    t9: [300,300,300,300,300,300,300,300,300,300,300,300]
+  };
+  Object.entries(p2025).forEach(([tid, arr])=>{
+    arr.forEach((val,m)=>{ if(val!==null) payments[paymentKey(tid, 2025, m)] = val; });
+  });
+
+  let counter = 0;
+  const mk = (year, month, category, desc, amount)=>{
+    counter++;
+    const mm = String(month+1).padStart(2,'0');
+    return {id:'seed'+counter, date:`${year}-${mm}-01`, category, desc, amount};
+  };
+  const expenses = [];
+  const addSeries = (year, category, desc, entries)=>{
+    entries.forEach(([m,amt])=> expenses.push(mk(year,m,category,desc,amt)));
+  };
+
+  addSeries(2024,'ניקיון','מנקה', [[0,600],[1,600],[2,600],[3,600],[4,600],[5,600],[6,650],[7,650]]);
+  addSeries(2024,'גינון','גנן', [[0,450],[1,450],[2,450],[3,450]]);
+  addSeries(2024,'תחזוקה','שינדלר (הוראת קבע - מעלית)', [[0,485],[1,499],[2,499],[3,500],[4,503],[5,259],[6,509],[7,509],[8,512],[9,517],[10,516],[11,517]]);
+  addSeries(2024,'חשמל','חשמל', [[0,1000],[1,100],[4,1086],[5,322.5],[7,308.09]]);
+  addSeries(2024,'ביטוח','ביטוח בניין (צ׳קים)', [[0,700],[1,700],[9,575],[10,575],[11,575]]);
+  addSeries(2024,'תחזוקה','בדיקת מהנדס מעלית', [[0,277],[1,277]]);
+  addSeries(2024,'אחר','ריסוס (שולם ע״י גלית, ללא קבלה)', [[6,400]]);
+
+  addSeries(2025,'אחר','עמלות בנק', [[0,25.92],[2,6.8]]);
+  addSeries(2025,'ניקיון','מנקה', [[0,650],[1,650],[2,650],[3,650],[4,650],[5,650],[6,650],[7,650]]);
+  addSeries(2025,'תחזוקה','שינדלר (הוראת קבע - מעלית)', [[0,521.08],[1,535.21],[2,538.21],[3,538.21],[4,540.78],[5,546.68],[6,545.1],[7,546.68],[8,548.82],[9,552.55],[10,549.34],[11,551.98]]);
+  addSeries(2025,'ביטוח','ביטוח בניין (צ׳קים)', [[0,575],[1,575],[2,578]]);
+  addSeries(2025,'תחזוקה','מהנדס מעלית', [[4,586]]);
+  addSeries(2025,'אחר','עמלת בנק', [[3,6.8],[5,18.88],[6,6.8],[7,6.8]]);
+  addSeries(2025,'אחר','משיכת מזומן', [[0,650],[3,1750],[9,650]]);
+  expenses.push({id:'seedCheck1', date:'2025-09-04', category:'אחר', desc:'החזרת צ׳ק — אלכסנדר ספידקוב', amount:250});
+
+  state.tenants = tenants;
+  state.payments = payments;
+  state.expenses = expenses;
+  state.settings.monthlyFee = 300;
+  state.year = 2025;
+}
+
+async function loadState(){
+  if(!SUPABASE_READY){
+    document.getElementById('saveIndicator').textContent = "לא מחובר ל-Supabase";
+    seedDefaultData();
+    loaded = true;
+    renderAll();
+    return;
+  }
+
+  // restore an existing login session, if any
+  const { data: sessionData } = await sb.auth.getSession();
+  if(sessionData && sessionData.session){
+    editUnlocked = true;
+    currentUserEmail = sessionData.session.user.email;
+  }
+
+  const { data, error } = await sb.from('building_state').select('data').eq('id', 1).single();
+  if(!error && data && data.data && Object.keys(data.data).length>0){
+    state = Object.assign(state, data.data);
+  }else{
+    seedDefaultData();
+    await saveToSupabase(); // only succeeds if already logged in; harmless no-op otherwise
+  }
+
+  loaded = true;
+  document.getElementById('saveIndicator').textContent = "מחובר";
+  renderAll();
+}
+
+async function saveToSupabase(){
+  if(!SUPABASE_READY) return false;
+  const { error } = await sb.from('building_state')
+    .update({ data: state, updated_at: new Date().toISOString() })
+    .eq('id', 1);
+  return !error;
+}
+
+function scheduleSave(){
+  document.getElementById('saveIndicator').textContent = "שומר…";
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    const ok = await saveToSupabase();
+    document.getElementById('saveIndicator').textContent = ok ? "נשמר" : "שגיאת שמירה (מחוברים?)";
+  }, 500);
+}
+
+async function tryUnlock(){
+  if(!SUPABASE_READY){ alert('חיבור ל-Supabase עדיין לא הוגדר בקובץ.'); return; }
+  const email = prompt('אימייל ועד הבית:');
+  if(!email) return;
+  const password = prompt('סיסמה:');
+  if(!password) return;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ alert('התחברות נכשלה: ' + error.message); return; }
+  editUnlocked = true;
+  currentUserEmail = data.user.email;
+  renderAll();
+}
+
+async function lockView(){
+  if(SUPABASE_READY) await sb.auth.signOut();
+  editUnlocked = false;
+  currentUserEmail = null;
+  renderAll();
+}
+
+async function changePin(){
+  alert('הכניסה כעת מתבצעת עם אימייל וסיסמה של Supabase. כדי לשנות סיסמה, היכנסו ללוח הבקרה של Supabase → Authentication → Users.');
+}
+
+function setState(mutator){
+  mutator();
+  scheduleSave();
+  renderAll();
+}
+
+/* ---------- RENDER SHELL ---------- */
+function renderAll(){
+  document.getElementById('buildingNameInput').value = state.buildingName;
+  document.getElementById('buildingNameInput').readOnly = !editUnlocked;
+  document.getElementById('yearLabel').textContent = state.year;
+  document.getElementById('adminControls').style.display = editUnlocked ? 'flex' : 'none';
+  document.getElementById('unlockBtn').style.display = editUnlocked ? 'none' : 'block';
+  const indicator = document.getElementById('saveIndicator');
+  if(editUnlocked && currentUserEmail) indicator.title = 'מחוברים כ-' + currentUserEmail;
+  renderNav();
+  renderMain();
+}
+
+document.getElementById('unlockBtn').addEventListener('click', tryUnlock);
+document.getElementById('lockBtn').addEventListener('click', lockView);
+document.getElementById('changePinBtn').addEventListener('click', changePin);
+
+function renderNav(){
+  const tabs = [
+    ["tenants","דיירים"],
+    ["payments","תשלומי ועד"],
+    ["expenses","הוצאות"],
+    ["summary","יתרת קופה"]
+  ];
+  const nav = document.getElementById('nav');
+  nav.innerHTML = tabs.map(([key,label])=>
+    `<button data-tab="${key}" class="${state.tab===key?'active':''}">${label}</button>`
+  ).join('');
+}
+
+function renderMain(){
+  const main = document.getElementById('main');
+  if(state.tab==='tenants') main.innerHTML = tenantsView();
+  else if(state.tab==='payments') main.innerHTML = paymentsView();
+  else if(state.tab==='expenses') main.innerHTML = expensesView();
+  else if(state.tab==='summary') main.innerHTML = summaryView();
+}
+
+/* ---------- TENANTS ---------- */
+function tenantsView(){
+  const rows = state.tenants.slice().sort((a,b)=> (a.apt||'').localeCompare(b.apt||'', 'he', {numeric:true}));
+  return `
+    <h1>דיירים</h1>
+    <p class="subtitle">רשימת הדיירים בבניין — שם, מספר דירה וטלפון ליצירת קשר.</p>
+    ${editUnlocked ? `
+    <div class="card">
+      <div class="row">
+        <label>שם מלא<input type="text" id="newTenantName" placeholder="לדוגמה: דנה כהן"></label>
+        <label>מספר דירה<input type="text" id="newTenantApt" placeholder="לדוגמה: 4" style="min-width:90px"></label>
+        <label>טלפון<input type="tel" id="newTenantPhone" placeholder="050-0000000"></label>
+        <button class="btn" data-action="addTenant">הוספת דייר</button>
+      </div>
+    </div>` : ''}
+    <div class="card">
+      ${rows.length===0 ? `<div class="empty-note">עדיין לא נוספו דיירים.</div>` : `
+      <table>
+        <thead><tr><th>שם מלא</th><th>דירה</th><th>טלפון</th><th></th></tr></thead>
+        <tbody>
+        ${rows.map(t=>`
+          <tr>
+            <td>${escapeHtml(t.name)}</td>
+            <td>${escapeHtml(t.apt)}</td>
+            <td>${escapeHtml(t.phone||'—')}</td>
+            <td>${editUnlocked ? `<button class="icon-btn" data-action="deleteTenant" data-id="${t.id}" title="מחיקה">✕</button>` : ''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`}
+    </div>
+  `;
+}
+
+/* ---------- PAYMENTS ---------- */
+function paymentsView(){
+  const tenants = state.tenants.slice().sort((a,b)=> (a.apt||'').localeCompare(b.apt||'', 'he', {numeric:true}));
+  const year = state.year;
+  const monthTotals = new Array(12).fill(0);
+  let grandTotal = 0;
+
+  const bodyRows = tenants.map(t=>{
+    const expected = (Number(state.settings.monthlyFee)||0) * 12;
+    let tenantTotal = 0;
+    const cells = MONTHS.map((_,m)=>{
+      const key = paymentKey(t.id, year, m);
+      const val = state.payments[key];
+      const num = val===undefined||val===''? '' : Number(val);
+      if(num) { monthTotals[m]+=num; tenantTotal+=num; }
+      const cls = num ? 'paid' : 'unpaid';
+      if(editUnlocked){
+        return `<td><input type="number" min="0" class="${cls}" data-action="payCell" data-tenant="${t.id}" data-month="${m}" value="${num===''?'':num}" placeholder="0"></td>`;
+      }
+      return `<td><span class="badge ${cls}">${num?fmt(num):'—'}</span></td>`;
+    }).join('');
+    grandTotal += tenantTotal;
+    const balance = tenantTotal - expected;
+    const balCls = expected>0 ? (balance>=0?'cell-ok':'cell-owe') : '';
+    const balText = expected>0 ? (balance>=0 ? `+${fmt(balance)}` : `-${fmt(Math.abs(balance))}`) : '—';
+    return `<tr><td class="name-cell">${escapeHtml(t.name)} <span style="color:var(--ink-soft);font-weight:400">(${escapeHtml(t.apt)})</span></td>${cells}<td>${fmt(tenantTotal)}</td><td class="${balCls}">${balText}</td></tr>`;
+  }).join('');
+
+  const totalsRow = `<tr class="total-row"><td class="name-cell">סה"כ לחודש</td>${monthTotals.map(v=>`<td>${fmt(v)}</td>`).join('')}<td>${fmt(grandTotal)}</td><td></td></tr>`;
+
+  return `
+    <h1>תשלומי ועד — ${year}</h1>
+    <p class="subtitle">${editUnlocked ? 'הזינו את הסכום שכל דייר שילם בכל חודש. עמודת "יתרה" משווה לתעריף החודשי שהוגדר.' : 'מצב תצוגה בלבד — סכום ששולם בכל חודש, לפי דייר.'}</p>
+    ${editUnlocked ? `
+    <div class="card">
+      <div class="row">
+        <label>תעריף ועד חודשי (לחישוב יתרה)<input type="number" min="0" id="monthlyFeeInput" value="${state.settings.monthlyFee||''}" placeholder="לדוגמה 250" style="min-width:130px"></label>
+        <button class="btn secondary" data-action="fillMissing">מילוי חסרים לפי התעריף</button>
+      </div>
+    </div>` : ''}
+    <div class="card" style="overflow-x:auto">
+      ${tenants.length===0 ? `<div class="empty-note">אין עדיין דיירים.</div>` : `
+      <table>
+        <thead><tr><th>דייר</th>${MONTHS_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>סה"כ שנה</th><th>יתרה</th></tr></thead>
+        <tbody>${bodyRows}${totalsRow}</tbody>
+      </table>`}
+    </div>
+  `;
+}
+
+/* ---------- EXPENSES ---------- */
+function expensesView(){
+  const year = state.year;
+  const list = state.expenses.filter(e=> new Date(e.date).getFullYear()===year)
+                             .sort((a,b)=> new Date(b.date)-new Date(a.date));
+  const total = list.reduce((s,e)=> s+Number(e.amount||0), 0);
+
+  return `
+    <h1>הוצאות — ${year}</h1>
+    <p class="subtitle">תיעוד הוצאות הבניין: תחזוקה, ניקיון, חשמל ועוד.</p>
+    ${editUnlocked ? `
+    <div class="card">
+      <div class="row">
+        <label>תאריך<input type="date" id="newExpDate" value="${year}-01-01"></label>
+        <label>קטגוריה<select id="newExpCat">${EXPENSE_CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select></label>
+        <label>תיאור<input type="text" id="newExpDesc" placeholder="לדוגמה: תיקון מעלית" style="min-width:220px"></label>
+        <label>סכום<input type="number" min="0" id="newExpAmount" placeholder="0" style="min-width:110px"></label>
+        <button class="btn" data-action="addExpense">הוספת הוצאה</button>
+      </div>
+    </div>` : ''}
+    <div class="card">
+      ${list.length===0 ? `<div class="empty-note">אין עדיין הוצאות רשומות לשנת ${year}.</div>` : `
+      <table>
+        <thead><tr><th>תאריך</th><th>קטגוריה</th><th>תיאור</th><th>סכום</th><th></th></tr></thead>
+        <tbody>
+          ${list.map(e=>`
+            <tr>
+              <td>${new Date(e.date).toLocaleDateString('he-IL')}</td>
+              <td>${escapeHtml(e.category)}</td>
+              <td>${escapeHtml(e.desc||'—')}</td>
+              <td>${fmt(e.amount)}</td>
+              <td>${editUnlocked ? `<button class="icon-btn" data-action="deleteExpense" data-id="${e.id}" title="מחיקה">✕</button>` : ''}</td>
+            </tr>`).join('')}
+          <tr class="total-row"><td colspan="3">סה"כ הוצאות</td><td>${fmt(total)}</td><td></td></tr>
+        </tbody>
+      </table>`}
+    </div>
+  `;
+}
+
+/* ---------- SUMMARY ---------- */
+function summaryView(){
+  const year = state.year;
+  const monthlyIncome = new Array(12).fill(0);
+  const monthlyExpense = new Array(12).fill(0);
+
+  Object.entries(state.payments).forEach(([key,val])=>{
+    const [,y,m] = key.split(':');
+    if(Number(y)===year) monthlyIncome[Number(m)] += Number(val)||0;
+  });
+  state.expenses.forEach(e=>{
+    const d = new Date(e.date);
+    if(d.getFullYear()===year) monthlyExpense[d.getMonth()] += Number(e.amount)||0;
+  });
+
+  const totalIncome = monthlyIncome.reduce((a,b)=>a+b,0);
+  const totalExpense = monthlyExpense.reduce((a,b)=>a+b,0);
+  const net = totalIncome - totalExpense;
+  const opening = Number(state.settings.openingBalance)||0;
+  const computed = opening + net;
+  const actual = state.settings.actualBalance;
+  const hasActual = actual!==null && actual!=='' && actual!==undefined;
+  const diff = hasActual ? Number(actual) - computed : null;
+
+  const maxVal = Math.max(1, ...monthlyIncome, ...monthlyExpense);
+  const bars = MONTHS_SHORT.map((m,i)=>{
+    const hIncome = Math.round((monthlyIncome[i]/maxVal)*120);
+    const hExpense = Math.round((monthlyExpense[i]/maxVal)*120);
+    return `<div class="bar-group">
+      <div class="bars">
+        <div class="bar income" style="height:${hIncome}px" title="הכנסות ${m}: ${fmt(monthlyIncome[i])}"></div>
+        <div class="bar expense" style="height:${hExpense}px" title="הוצאות ${m}: ${fmt(monthlyExpense[i])}"></div>
+      </div>
+      <div class="m-label">${m}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <h1>יתרת קופה — ${year}</h1>
+    <p class="subtitle">סיכום הכנסות והוצאות השנה, ואיזון מול חשבון הבנק בפועל.</p>
+    <div class="stat-grid">
+      <div class="stat good"><div class="label">סה"כ הכנסות (${year})</div><div class="value">${fmt(totalIncome)}</div></div>
+      <div class="stat bad"><div class="label">סה"כ הוצאות (${year})</div><div class="value">${fmt(totalExpense)}</div></div>
+      <div class="stat ${net>=0?'good':'bad'}"><div class="label">מאזן שנתי (הכנסות פחות הוצאות)</div><div class="value">${net>=0?'+':'-'}${fmt(Math.abs(net))}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="legend">
+        <span><i style="background:var(--good)"></i> הכנסות</span>
+        <span><i style="background:var(--bad)"></i> הוצאות</span>
+      </div>
+      <div class="chart">${bars}</div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        ${editUnlocked
+          ? `<label>יתרת פתיחה (לפני תחילת המעקב)<input type="number" id="openingBalanceInput" value="${state.settings.openingBalance||0}" style="min-width:140px"></label>`
+          : `<div><div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:5px">יתרת פתיחה</div><div style="font-weight:700">${fmt(opening)}</div></div>`}
+        <div>
+          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:5px">יתרת קופה מחושבת (פתיחה + מאזן שנתי)</div>
+          <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800">${fmt(computed)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      ${editUnlocked ? `
+      <div class="row">
+        <label>סכום עדכני בחשבון הבנק (בפועל)<input type="number" id="actualBalanceInput" value="${hasActual?actual:''}" placeholder="הזינו לפי דף חשבון" style="min-width:170px"></label>
+        <label>נכון לתאריך<input type="date" id="actualBalanceDateInput" value="${state.settings.actualBalanceDate||''}"></label>
+        <button class="btn" data-action="saveActualBalance">שמירה</button>
+      </div>` : `
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:5px">סכום עדכני בחשבון הבנק (בפועל)${state.settings.actualBalanceDate?` — נכון ל-${new Date(state.settings.actualBalanceDate).toLocaleDateString('he-IL')}`:''}</div>
+      <div style="font-weight:700;font-size:18px">${hasActual?fmt(actual):'טרם עודכן'}</div>`}
+      ${hasActual ? `<div class="diff-note ${Math.abs(diff)<1?'':(diff<0?'bad':'good')}">
+        ${Math.abs(diff)<1 ? 'התאמה מלאה בין הרישום לחשבון הבנק.' :
+          diff<0 ? `בחשבון הבנק ${fmt(Math.abs(diff))} פחות מהמחושב — כדאי לבדוק תשלומים או הוצאות שלא נרשמו.` :
+          `בחשבון הבנק ${fmt(diff)} יותר מהמחושב — ייתכן תשלום שלא נרשם.`}
+      </div>` : ''}
+    </div>
+  `;
+}
+
+/* ---------- READ-ONLY REPORT EXPORT ---------- */
+function buildReadOnlyReport(){
+  const year = state.year;
+  const tenants = state.tenants.slice().sort((a,b)=> (a.apt||'').localeCompare(b.apt||'', 'he', {numeric:true}));
+  const fee = Number(state.settings.monthlyFee)||0;
+
+  const monthlyIncome = new Array(12).fill(0);
+  const monthlyExpense = new Array(12).fill(0);
+  Object.entries(state.payments).forEach(([key,val])=>{
+    const [,y,m] = key.split(':');
+    if(Number(y)===year) monthlyIncome[Number(m)] += Number(val)||0;
+  });
+  state.expenses.forEach(e=>{
+    const d = new Date(e.date);
+    if(d.getFullYear()===year) monthlyExpense[d.getMonth()] += Number(e.amount)||0;
+  });
+  const totalIncome = monthlyIncome.reduce((a,b)=>a+b,0);
+  const totalExpenseSum = monthlyExpense.reduce((a,b)=>a+b,0);
+  const net = totalIncome - totalExpenseSum;
+  const computed = (Number(state.settings.openingBalance)||0) + net;
+
+  const paymentRows = tenants.map(t=>{
+    const expected = fee*12;
+    let tTotal = 0;
+    const cells = MONTHS.map((_,m)=>{
+      const val = state.payments[paymentKey(t.id, year, m)];
+      const num = val===undefined||val===''? 0 : Number(val);
+      tTotal += num;
+      const cls = num ? 'paid' : 'unpaid';
+      return `<td><span class="badge ${cls}">${num?fmt(num):'—'}</span></td>`;
+    }).join('');
+    const bal = tTotal - expected;
+    const balCls = expected>0 ? (bal>=0?'cell-ok':'cell-owe') : '';
+    const balText = expected>0 ? (bal>=0?`+${fmt(bal)}`:`-${fmt(Math.abs(bal))}`) : '—';
+    return `<tr><td class="name-cell">${escapeHtml(t.name)} <span style="color:var(--ink-soft);font-weight:400">(דירה ${escapeHtml(t.apt)})</span></td>${cells}<td>${fmt(tTotal)}</td><td class="${balCls}">${balText}</td></tr>`;
+  }).join('');
+
+  const expenseList = state.expenses.filter(e=> new Date(e.date).getFullYear()===year)
+                                     .sort((a,b)=> new Date(a.date)-new Date(b.date));
+  const expenseRows = expenseList.map(e=>`
+    <tr><td>${new Date(e.date).toLocaleDateString('he-IL')}</td><td>${escapeHtml(e.category)}</td><td>${escapeHtml(e.desc||'—')}</td><td>${fmt(e.amount)}</td></tr>
+  `).join('');
+
+  const maxVal = Math.max(1, ...monthlyIncome, ...monthlyExpense);
+  const bars = MONTHS_SHORT.map((m,i)=>{
+    const hIncome = Math.round((monthlyIncome[i]/maxVal)*120);
+    const hExpense = Math.round((monthlyExpense[i]/maxVal)*120);
+    return `<div class="bar-group"><div class="bars">
+      <div class="bar income" style="height:${hIncome}px"></div>
+      <div class="bar expense" style="height:${hExpense}px"></div>
+    </div><div class="m-label">${m}</div></div>`;
+  }).join('');
+
+  const baseCss = document.querySelector('style').textContent;
+  const generatedAt = new Date().toLocaleString('he-IL');
+
+  return `<!DOCTYPE html>
+<html lang="he" dir="rtl"><head><meta charset="UTF-8">
+<title>${escapeHtml(state.buildingName||'ספר הבית')} — דוח דיירים ${year}</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+${baseCss}
+body{padding:0;}
+.report-wrap{max-width:1100px;margin:0 auto;padding:40px 32px;}
+.report-header{margin-bottom:28px;}
+.report-header .tag{font-family:'Manrope',sans-serif;font-size:12.5px;font-weight:700;color:var(--accent-dark);letter-spacing:.06em;}
+.report-header h1{margin-top:6px;}
+.section-title{font-family:'Manrope',sans-serif;font-size:16px;font-weight:800;margin:36px 0 12px;}
+.badge{display:inline-block;padding:3px 9px;border-radius:7px;font-size:12.5px;font-weight:600;}
+.badge.paid{background:var(--good-soft);color:var(--good);}
+.badge.unpaid{background:var(--bad-soft);color:var(--ink-soft);}
+.generated-note{color:var(--ink-soft);font-size:12.5px;margin-top:30px;border-top:1px solid var(--line);padding-top:14px;}
+table input{display:none;}
+</style></head>
+<body>
+<div class="report-wrap">
+  <div class="report-header">
+    <div class="tag">ספר הבית · דוח לצפיית דיירים</div>
+    <h1>${escapeHtml(state.buildingName || 'הבניין שלנו')} — שנת ${year}</h1>
+    <p class="subtitle">מסמך זה לצפייה בלבד ואינו ניתן לעריכה. לעדכונים יש לפנות לוועד הבית.</p>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat good"><div class="label">סה"כ הכנסות</div><div class="value">${fmt(totalIncome)}</div></div>
+    <div class="stat bad"><div class="label">סה"כ הוצאות</div><div class="value">${fmt(totalExpenseSum)}</div></div>
+    <div class="stat ${net>=0?'good':'bad'}"><div class="label">מאזן שנתי</div><div class="value">${net>=0?'+':'-'}${fmt(Math.abs(net))}</div></div>
+  </div>
+  <div class="card">
+    <div class="legend"><span><i style="background:var(--good)"></i> הכנסות</span><span><i style="background:var(--bad)"></i> הוצאות</span></div>
+    <div class="chart">${bars}</div>
+  </div>
+
+  <div class="section-title">תשלומי ועד — לפי דייר וחודש</div>
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <thead><tr><th>דייר</th>${MONTHS_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>סה"כ שנה</th><th>יתרה</th></tr></thead>
+      <tbody>${paymentRows}</tbody>
+    </table>
+  </div>
+
+  <div class="section-title">הוצאות ${year}</div>
+  <div class="card">
+    ${expenseList.length===0 ? '<div class="empty-note">אין הוצאות רשומות לשנה זו.</div>' : `
+    <table>
+      <thead><tr><th>תאריך</th><th>קטגוריה</th><th>תיאור</th><th>סכום</th></tr></thead>
+      <tbody>${expenseRows}<tr class="total-row"><td colspan="3">סה"כ</td><td>${fmt(totalExpenseSum)}</td></tr></tbody>
+    </table>`}
+  </div>
+
+  <div class="generated-note">הדוח הופק ב-${generatedAt}. יתרת קופה מחושבת (כולל יתרת פתיחה): ${fmt(computed)}.</div>
+</div>
+</body></html>`;
+}
+
+function escapeHtml(str){
+  if(str===undefined||str===null) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- EVENTS ---------- */
+document.getElementById('buildingNameInput').addEventListener('change', e=>{
+  setState(()=>{ state.buildingName = e.target.value; });
+});
+
+document.getElementById('exportReportBtn').addEventListener('click', ()=>{
+  const html = buildReadOnlyReport();
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = (state.buildingName || 'ספר-הבית').replace(/[\\/:*?"<>|]/g,'').trim() || 'ספר-הבית';
+  a.href = url;
+  a.download = `${safeName}-דוח-דיירים-${state.year}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 2000);
+});
+
+document.getElementById('reloadImportBtn').addEventListener('click', async ()=>{
+  const ok = confirm('פעולה זו תחליף את כל הנתונים הנוכחיים בנתונים שיובאו מהקובץ. להמשיך?');
+  if(!ok) return;
+  const keepName = state.buildingName;
+  state = {
+    buildingName: keepName,
+    year: new Date().getFullYear(),
+    tab: state.tab,
+    tenants: [], payments: {}, expenses: [],
+    settings: { monthlyFee: 0, openingBalance: 0, actualBalance: null, actualBalanceDate: "" }
+  };
+  seedDefaultData();
+  state.buildingName = keepName;
+  scheduleSave();
+  renderAll();
+});
+
+document.getElementById('sidebar').addEventListener('click', e=>{
+  const yearBtn = e.target.closest('[data-action]');
+  const navBtn = e.target.closest('[data-tab]');
+  if(navBtn){ setState(()=>{ state.tab = navBtn.dataset.tab; }); }
+  else if(yearBtn){
+    if(yearBtn.dataset.action==='prevYear') setState(()=>{ state.year -= 1; });
+    if(yearBtn.dataset.action==='nextYear') setState(()=>{ state.year += 1; });
+  }
+});
+
+document.getElementById('main').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+
+  if(action==='addTenant'){
+    const name = document.getElementById('newTenantName').value.trim();
+    const apt = document.getElementById('newTenantApt').value.trim();
+    const phone = document.getElementById('newTenantPhone').value.trim();
+    if(!name || !apt) return;
+    setState(()=>{ state.tenants.push({id:uid(), name, apt, phone}); });
+  }
+  else if(action==='deleteTenant'){
+    setState(()=>{ state.tenants = state.tenants.filter(t=>t.id!==btn.dataset.id); });
+  }
+  else if(action==='fillMissing'){
+    const fee = Number(state.settings.monthlyFee)||0;
+    if(!fee) return;
+    setState(()=>{
+      state.tenants.forEach(t=>{
+        for(let m=0;m<12;m++){
+          const key = paymentKey(t.id, state.year, m);
+          if(state.payments[key]===undefined || state.payments[key]==='') state.payments[key]=fee;
+        }
+      });
+    });
+  }
+  else if(action==='addExpense'){
+    const date = document.getElementById('newExpDate').value;
+    const category = document.getElementById('newExpCat').value;
+    const desc = document.getElementById('newExpDesc').value.trim();
+    const amount = Number(document.getElementById('newExpAmount').value);
+    if(!date || !amount) return;
+    setState(()=>{ state.expenses.push({id:uid(), date, category, desc, amount}); });
+  }
+  else if(action==='deleteExpense'){
+    setState(()=>{ state.expenses = state.expenses.filter(x=>x.id!==btn.dataset.id); });
+  }
+  else if(action==='saveActualBalance'){
+    const val = document.getElementById('actualBalanceInput').value;
+    const date = document.getElementById('actualBalanceDateInput').value;
+    setState(()=>{
+      state.settings.actualBalance = val===''? null : Number(val);
+      state.settings.actualBalanceDate = date;
+    });
+  }
+});
+
+document.getElementById('main').addEventListener('change', e=>{
+  if(e.target.id==='monthlyFeeInput'){
+    setState(()=>{ state.settings.monthlyFee = Number(e.target.value)||0; });
+  }
+  else if(e.target.id==='openingBalanceInput'){
+    setState(()=>{ state.settings.openingBalance = Number(e.target.value)||0; });
+  }
+  else if(e.target.dataset.action==='payCell'){
+    const tenant = e.target.dataset.tenant;
+    const month = Number(e.target.dataset.month);
+    const val = e.target.value;
+    setState(()=>{
+      const key = paymentKey(tenant, state.year, month);
+      if(val==='') delete state.payments[key];
+      else state.payments[key] = Number(val);
+    });
+  }
+});
+
+loadState();
+</script>
+</body>
+</html>
